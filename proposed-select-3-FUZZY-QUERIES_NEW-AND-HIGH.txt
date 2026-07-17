@@ -1,0 +1,27 @@
+-- META:
+-- SELECT *
+-- FROM tbl_cars
+-- WHERE prod_year IS 'NEW'
+-- AND engine_capacity IS 'HIGH'
+
+-- 1. You can use MUL (a*b) or MIN (LEAST(a,b)) relevance assessment (fuzzy degree) calculation
+-- 2. You can use WHERE to remove zero-relevance records (result of x1 <= x < x2 with y1=0 in trapezoid)
+
+-- SQL:
+
+SELECT entity_id, a.entity_name
+  ,LEAST(a.relevance_assessment, b.relevance_assessment) AS FUZZY_DEGREE_MIN -- MIN, can be changed for MUL
+  -- ,a.relevance_assessment * b.relevance_assessment AS FUZZY_DEGREE_MUL -- MUL, can be changed for MIN (LEAST)
+  -- ,a.relevance_assessment AS year_is_new_relevance  -- year relevance
+  -- ,b.relevance_assessment AS engine_capacity_is_middle_relevance  -- engine_capacity relevance
+FROM 
+  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS relevance_assessment 
+  FROM entity NATURAL JOIN attribute NATURAL JOIN value NATURAL JOIN lvv NATURAL JOIN mf
+  WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 AND lvv='NEW') a 
+INNER JOIN
+  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS relevance_assessment 
+  FROM entity NATURAL JOIN attribute NATURAL JOIN value NATURAL JOIN lvv NATURAL JOIN mf
+  WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=3 AND lvv='HIGH') b
+USING(entity_id)
+WHERE a.relevance_assessment > 0 AND b.relevance_assessment > 0  -- remove zero relevance records
+;  

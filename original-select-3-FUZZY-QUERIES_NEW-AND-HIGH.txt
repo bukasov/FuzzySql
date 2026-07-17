@@ -1,0 +1,35 @@
+-- META:
+-- SELECT *
+-- FROM tbl_cars
+-- WHERE prod_year IS 'NEW'
+-- AND engine_capacity IS 'HIGH'
+
+-- SQL 1:
+SELECT *
+FROM (
+  SELECT c.model, c.type, c.prod_year, c.engine_capacity,
+    MIN(CASE column_name
+        WHEN 'prod_year' THEN FP_TRAPEZOID(prod_year,a,b,c,d)
+        WHEN 'engine_capacity' THEN FP_TRAPEZOID(engine_capacity,a,b,c,d) 
+        END) AS FUZZY_DEGREE
+  FROM tbl_cars c, tbl_possibility
+  WHERE (linguistic_variable_value='NEW' or linguistic_variable_value='HIGH') 
+    AND (column_name='prod_year' or column_name='engine_capacity')
+  GROUP BY c.model, c.type, c.prod_year, c.engine_capacity
+) 
+WHERE FUZZY_DEGREE > 0;
+
+-- SQL 2:
+SELECT c.model, c.type, c.prod_year, c.engine_capacity,
+ MIN(CASE column_name 
+     WHEN 'prod_year' THEN FP_TRAPEZOID(prod_year,a,b,c,d)
+     WHEN 'engine_capacity' THEN FP_TRAPEZOID(engine_capacity,a,b,c,d) 
+     END) AS FUZZY_DEGREE
+FROM tbl_cars c, tbl_possibility
+WHERE (linguistic_variable_value='NEW' OR linguistic_variable_value='HIGH') 
+  AND (column_name='prod_year' OR column_name='engine_capacity')
+GROUP BY c.model, c.type, c.prod_year, c.engine_capacity
+HAVING MIN(CASE column_name
+           WHEN 'prod_year' THEN FP_TRAPEZOID(prod_year,a,b,c,d)
+           WHEN 'engine_capacity' THEN FP_TRAPEZOID(engine_capacity,a,b,c,d) 
+           END) >0;

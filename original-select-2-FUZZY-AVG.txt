@@ -1,0 +1,15 @@
+-- META:
+
+-- SELECT prod_year, FUZZY_AVG(price)
+-- FROM tbl_cars
+-- GROUP BY prod_year;
+
+-- SQL:
+
+SELECT linguistic_variable_value, ROUND(
+  SUM(FP_TRAPEZOID(prod_year,a,b,c,d)*price ) /
+  SUM(FP_TRAPEZOID(prod_year,a,b,c,d)),2) FUZZY_AVG
+FROM tbl_cars, tbl_possibility
+WHERE FP_TRAPEZOID(prod_year,a,b,c,d)>0 
+  AND column_name='prod_year'
+GROUP BY linguistic_variable_value;

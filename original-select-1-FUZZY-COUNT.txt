@@ -1,0 +1,12 @@
+-- META:
+-- SELECT engine_capacity, FUZZY_COUNT(engine_capacity)
+-- FROM tbl_cars
+-- GROUP BY engine_capacity;
+
+--SQL:
+
+SELECT linguistic_variable_value, ROUND(SUM(FP_TRAPEZOID(engine_capacity,a,b,c,d)),2) FUZZY_COUNT
+FROM tbl_cars, tbl_possibility
+WHERE FP_TRAPEZOID(engine_capacity,a,b,c,d)>0 
+  AND column_name='engine_capacity'
+GROUP BY linguistic_variable_value;
