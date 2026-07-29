@@ -1,30 +1,44 @@
 DROP TABLE mf;
 DROP TABLE lvv;
 DROP TABLE value;
-DROP TABLE attribute;
 DROP TABLE entity;
+DROP TABLE attribute;
+DROP TABLE class;
 
-CREATE TABLE entity (    
-    entity_id NUMBER PRIMARY KEY,
-    entity_name VARCHAR2(50)
+CREATE TABLE class (
+    class_id NUMBER PRIMARY KEY,
+    class_name VARCHAR2(50)
 );
--- add index for 'name' if needed for finding by name
+-- add index on 'name' for fast search by name if needed
 
 CREATE TABLE attribute (    
     attribute_id NUMBER PRIMARY KEY,
+    class_id NUMBER,
     attribute_name VARCHAR2(50),
-    attribute_type VARCHAR2(6) -- TEXT / NUMBER
+    attribute_type VARCHAR2(6) -- 'TEXT' / 'NUMBER'
 );
+
+CREATE TABLE entity (    
+    entity_id NUMBER PRIMARY KEY,
+    class_id NUMBER,
+    entity_name VARCHAR2(50)
+);
+-- add index on 'name' for fast search by name if needed
 
 CREATE TABLE value (
     value_id NUMBER PRIMARY KEY,
     entity_id NUMBER,
     attribute_id NUMBER,
-    text_value VARCHAR2(2000), -- if attribute.type = TEXT
-    number_value NUMBER        -- if attribute.type = NUMBER
+    text_value VARCHAR2(2000), -- if attribute.type = 'TEXT'
+    number_value NUMBER        -- if attribute.type = 'NUMBER'
 );
+
+ALTER TABLE entity ADD CONSTRAINT entity_class_fk FOREIGN KEY(class_id) REFERENCES class;
+ALTER TABLE attribute ADD CONSTRAINT attribute_class_fk FOREIGN KEY(class_id) REFERENCES class;
 ALTER TABLE value ADD CONSTRAINT value_entity_fk FOREIGN KEY(entity_id) REFERENCES entity;
 ALTER TABLE value ADD CONSTRAINT value_attribute_fk FOREIGN KEY(attribute_id) REFERENCES attribute;
+
+CREATE INDEX attribute_class_id_idx ON attribute (class_id);
 CREATE INDEX value_entity_id_idx ON value (entity_id);
 CREATE INDEX value_attribute_id_idx ON value (attribute_id);
 CREATE INDEX value_number_value_idx ON value (number_value);
@@ -52,19 +66,22 @@ CREATE INDEX mf_lvv_id_idx ON mf (lvv_id);
 
 -- Test data
 
+-- Classes
+INSERT INTO class(class_id, class_name) VALUES(1, 'CAR');
+
 -- Entities
-INSERT INTO entity(entity_id, entity_name) VALUES(1, 'VOLVO');
-INSERT INTO entity(entity_id, entity_name) VALUES(2, 'ASTON MARTIN');
-INSERT INTO entity(entity_id, entity_name) VALUES(3, 'MAZDA');
-INSERT INTO entity(entity_id, entity_name) VALUES(4, 'OPEL');
-INSERT INTO entity(entity_id, entity_name) VALUES(5, 'VOLKSWAGEN');
-INSERT INTO entity(entity_id, entity_name) VALUES(6, 'AUDI');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(1, 1, 'VOLVO');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(2, 1, 'ASTON MARTIN');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(3, 1, 'MAZDA');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(4, 1, 'OPEL');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(5, 1, 'VOLKSWAGEN');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(6, 1, 'AUDI');
 
 -- Attributes
-INSERT INTO attribute(attribute_id, attribute_name, attribute_type) VALUES (1, 'TYPE','TEXT');
-INSERT INTO attribute(attribute_id, attribute_name, attribute_type) VALUES (2, 'PROD_YEAR','NUMBER');
-INSERT INTO attribute(attribute_id, attribute_name, attribute_type) VALUES (3, 'ENGINE_CAPACITY','NUMBER');
-INSERT INTO attribute(attribute_id, attribute_name, attribute_type) VALUES (4, 'PRICE','NUMBER');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (1, 1, 'TYPE', 'TEXT');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (2, 1, 'PROD_YEAR', 'NUMBER');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (3, 1, 'ENGINE_CAPACITY', 'NUMBER');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (4, 1, 'PRICE', 'NUMBER');
 
 -- Values
 
