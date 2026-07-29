@@ -11,18 +11,18 @@
 -- SQL:
 
 SELECT entity_id, c1.entity_name
-  ,LEAST(c1.fuzzy_degree, c2.fuzzy_degree) AS FUZZY_DEGREE_MIN 
-  ,c1.fuzzy_degree * c2.fuzzy_degree AS FUZZY_DEGREE_PROD 
-  ,c1.fuzzy_degree AS year_is_new_degree  -- year degree
-  ,c2.fuzzy_degree AS engine_capacity_is_middle_degree  -- engine_capacity degree
+  ,LEAST(c1.degree, c2.degree) AS FUZZY_DEGREE_MIN 
+  ,c1.degree * c2.degree AS FUZZY_DEGREE_PROD 
+  ,c1.degree AS year_is_new_degree  -- year degree
+  ,c2.degree AS engine_capacity_is_middle_degree  -- engine_capacity degree
 FROM 
-  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS fuzzy_degree 
+  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
   FROM entity NATURAL JOIN attribute NATURAL JOIN value NATURAL JOIN lvv NATURAL JOIN mf
   WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 AND lvv='NEW') c1 
 INNER JOIN
-  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS fuzzy_degree 
+  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
   FROM entity NATURAL JOIN attribute NATURAL JOIN value NATURAL JOIN lvv NATURAL JOIN mf
   WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=3 AND lvv='HIGH') c2
 USING(entity_id)
-WHERE c1.fuzzy_degree > 0 AND c2.fuzzy_degree > 0  -- remove zero relevance records
+WHERE c1.degree > 0 AND c2.degree > 0  -- remove zero relevance records
 ;  
