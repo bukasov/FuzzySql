@@ -4,24 +4,25 @@
 -- WHERE prod_year IS 'NEW'
 -- AND engine_capacity IS 'HIGH'
 
--- 1. You can use MUL (a*b) or MIN (LEAST(a,b)) relevance assessment (fuzzy degree) calculation
+-- 1. You can use PROD (a*b) or MIN (LEAST(a,b)) for fuzzy degree calculation
 -- 2. You can use WHERE to remove zero-relevance records (result of x1 <= x < x2 with y1=0 in trapezoid)
+-- 3. You can use WHERE to set minimum fuzzy_degree for each criteria
 
 -- SQL:
 
-SELECT entity_id, a.entity_name
-  ,LEAST(a.relevance_assessment, b.relevance_assessment) AS FUZZY_DEGREE_MIN -- MIN, can be changed for MUL
-  -- ,a.relevance_assessment * b.relevance_assessment AS FUZZY_DEGREE_MUL -- MUL, can be changed for MIN (LEAST)
-  -- ,a.relevance_assessment AS year_is_new_relevance  -- year relevance
-  -- ,b.relevance_assessment AS engine_capacity_is_middle_relevance  -- engine_capacity relevance
+SELECT entity_id, c1.entity_name
+  ,LEAST(c1.fuzzy_degree, c2.fuzzy_degree) AS FUZZY_DEGREE_MIN 
+  ,c1.fuzzy_degree * c2.fuzzy_degree AS FUZZY_DEGREE_PROD 
+  ,c1.fuzzy_degree AS year_is_new_degree  -- year degree
+  ,c2.fuzzy_degree AS engine_capacity_is_middle_degree  -- engine_capacity degree
 FROM 
-  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS relevance_assessment 
+  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS fuzzy_degree 
   FROM entity NATURAL JOIN attribute NATURAL JOIN value NATURAL JOIN lvv NATURAL JOIN mf
-  WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 AND lvv='NEW') a 
+  WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 AND lvv='NEW') c1 
 INNER JOIN
-  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS relevance_assessment 
+  (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS fuzzy_degree 
   FROM entity NATURAL JOIN attribute NATURAL JOIN value NATURAL JOIN lvv NATURAL JOIN mf
-  WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=3 AND lvv='HIGH') b
+  WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=3 AND lvv='HIGH') c2
 USING(entity_id)
-WHERE a.relevance_assessment > 0 AND b.relevance_assessment > 0  -- remove zero relevance records
+WHERE c1.fuzzy_degree > 0 AND c2.fuzzy_degree > 0  -- remove zero relevance records
 ;  
