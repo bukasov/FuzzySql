@@ -1,0 +1,16 @@
+-- Integrity test
+-- Wrong mf - intersecting [x1,x2) with another [x1,x2) for same LVV
+INSERT INTO class(class_id, class_name) VALUES(2, 'PHONE');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (5, 2, 'RAM', 'NUMBER');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (11, 5, 'SMALL');
+
+-- MF for LVV SMALL (lvv_id:11) - ERROR !!! Same x in range of two segments
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (20, 11, 0, 0, 2, 1); --   -/--\
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (21, 11, 1, 1, 4, 1); --   /    \
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (22, 11, 5, 1, 5, 0); --  /      \
+
+SELECT a.lvv_id, a.mf_id, a.x1, a.x2, b.mf_id, b.x1, b.x2
+FROM mf a JOIN mf b ON a.lvv_id=b.lvv_id AND a.mf_id < b.mf_id
+WHERE a.x1 < b.x2 AND b.x1 < a.x2;
+
+ROLLBACK;
