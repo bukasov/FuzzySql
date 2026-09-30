@@ -1,0 +1,9 @@
+WITH 
+lvv_ranges AS (
+  SELECT attribute_id, lvv_id, min(x1) AS left, max(x2) AS right
+  FROM mf JOIN lvv USING(lvv_id)
+  GROUP BY attribute_id, lvv_id)
+SELECT * FROM lvv_ranges WHERE lvv_id IN (
+  SELECT a.lvv_id
+  FROM lvv_ranges a JOIN lvv_ranges b ON a.attribute_id = b.attribute_id
+  WHERE a.left >= b.left AND a.right <=b.right AND a.lvv_id<>b.lvv_id);
