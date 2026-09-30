@@ -1,0 +1,60 @@
+-- integrity test
+-- find values of attributes not covered by LVVs MFs
+INSERT INTO class(class_id, class_name) VALUES(2, 'PHONE');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (5, 2, 'RAM', 'NUMBER');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (11, 5, 'SMALL');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (12, 5, 'MIDDLE');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (13, 5, 'HIGH');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (14, 5, 'VERY HIGH');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (17, 5, 'TINY');
+
+-- MF for LVV SMALL (lvv_id:11) 0-1-2-3
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (20, 11, 0, 0, 1, 1); --    /--\
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (21, 11, 1, 1, 2, 1); --   /    \
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (22, 11, 2, 1, 3, 0); --  /      \
+-- MF for LVV MIDDLE (lvv_id:12) 2-3-4-5
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (23, 12, 2, 0, 3, 1); --    /--\
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (24, 12, 3, 1, 4, 1); --   /    \
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (25, 12, 4, 1, 5, 0); --  /      \
+-- MF for LVV HIGH (lvv_id:13) 5-6-7-8
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (26, 13, 5, 0, 6, 1); --    /--\
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (27, 13, 6, 1, 7, 1); --   /    \
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (28, 13, 7, 1, 8, 0); --  /      \
+
+-- !!!
+-- There is BLANK between right 8 of 'HIGH' and left 10 of 'VERY HIGH'
+-- MF for LVV VERY HIGH (lvv_id:14) 10-11-14-16
+-- !!!
+
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (29, 14, 10, 0, 11, 1); --    /--\
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (30, 14, 11, 1, 14, 1); --   /    \
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (31, 14, 14, 1, 16, 0); --  /      \
+
+-- check it works correctly for synonyms and quasi-synonyms
+-- subrange: TINY is a part of SMALL (quasi-synonym)
+-- MF for LVV TINY (lvv_id:12) 0 - 1 - 1.1 - 1.2 
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (50, 17, 0, 0, 1, 1);     --    /--\--\
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (51, 17, 1, 1, 1.1, 1);   --   /    \  \
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (52, 17, 1.1, 1, 1.2, 0); --  /      \  \
+
+
+WITH 
+lvv_ranges AS (
+  SELECT attribute_id, lvv_id, min(x1) AS left, max(x2) AS right
+  FROM mf JOIN lvv USING(lvv_id)
+  GROUP BY attribute_id, lvv_id ORDER BY lvv_id),
+lvv_ranges_without_subranges AS (  
+  SELECT * FROM lvv_ranges WHERE lvv_id NOT IN (
+    SELECT a.lvv_id
+    FROM lvv_ranges a JOIN lvv_ranges b ON a.attribute_id = b.attribute_id
+    WHERE a.left >= b.left AND a.right <=b.right AND a.lvv_id<>b.lvv_id)
+),
+current_right_with_previous_left AS (
+    SELECT attribute_id, lvv_id, left AS current_left, LAG(right) OVER (PARTITION BY attribute_id ORDER BY left) AS previous_right
+    FROM lvv_ranges_without_subranges)
+SELECT attribute_id, lvv_id, current_left, previous_right
+FROM current_right_with_previous_left
+WHERE previous_right < current_left;
+
+ROLLBACK;
+
