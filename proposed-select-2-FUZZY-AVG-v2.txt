@@ -1,0 +1,19 @@
+-- META:
+
+-- SELECT prod_year, FUZZY_AVG(price)
+-- FROM tbl_cars
+-- GROUP BY prod_year;
+
+-- SQL:
+
+SELECT lvv linguistic_variable_value, ROUND(SUM(weight * value) / SUM(weight), 2) AS FUZZY_AVG
+FROM
+(SELECT entity_id, entity_name, lvv, y1+(NUMBER_VALUE-x1)*(y2-y1)/(x2-x1) AS weight
+ FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id) JOIN lvv USING(attribute_id) JOIN mf USING(lvv_id)
+ WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 /*year*/)
+JOIN
+(SELECT entity_id, number_value AS value
+ FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id)
+ WHERE attribute_id=4 /*price*/)
+USING (entity_id)
+GROUP BY lvv;
