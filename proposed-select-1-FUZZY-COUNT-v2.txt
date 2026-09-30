@@ -1,0 +1,15 @@
+-- META:
+-- SELECT engine_capacity, FUZZY_COUNT(engine_capacity)
+-- FROM tbl_cars
+-- GROUP BY engine_capacity;
+
+--SQL:
+
+SELECT lvv AS linguistic_variable_value, ROUND(SUM(y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1)),2) AS fuzzy_count
+FROM entity 
+    JOIN value USING(entity_id)
+    JOIN attribute USING(attribute_id)
+    JOIN lvv USING(attribute_id)
+    JOIN mf USING(lvv_id)
+WHERE attribute_id=3 AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+GROUP BY lvv;
