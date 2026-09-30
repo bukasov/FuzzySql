@@ -1,0 +1,17 @@
+-- Integrity test
+-- Assign value to entity from wrong class
+INSERT INTO class(class_id, class_name) VALUES(2, 'PHONE');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(7, 2, 'iPhone');
+INSERT INTO entity(entity_id, class_id, entity_name) VALUES(8, 2, 'Samsung');
+INSERT INTO attribute(attribute_id, class_id, attribute_name, attribute_type) VALUES (5, 2, 'RAM', 'NUMBER');
+INSERT INTO value(value_id, entity_id, attribute_id, text_value, number_value) VALUES (25, 7, 5, null, 8); -- ok - iPhone 8 Gb
+INSERT INTO value(value_id, entity_id, attribute_id, text_value, number_value) VALUES (26, 8, 5, null, 16); -- ok - Samsung 16 Gb
+INSERT INTO value(value_id, entity_id, attribute_id, text_value, number_value) VALUES (27, 8, 4, null, 50000); -- error: price from car (4) to phone
+
+SELECT entity_id, attribute_id
+FROM value 
+    JOIN entity USING(entity_id) JOIN class c1 ON entity.class_id = c1.class_id
+    JOIN attribute USING(attribute_id) JOIN class c2 ON attribute.class_id = c2.class_id
+WHERE c1.class_id <> c2.class_id;
+
+ROLLBACK;
