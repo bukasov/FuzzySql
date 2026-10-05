@@ -25,3 +25,7 @@ END;
 /
 
 
+/*
+   TRUNCATE TABLE experiment_results;
+   TRUNCATE TABLE test_execution_log;
+*/
