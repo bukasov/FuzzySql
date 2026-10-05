@@ -1,10 +1,9 @@
-
 -- TRUNCATE TABLE experiment_results
 
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 
 DECLARE
-    -- Визначаємо типи колекцій для зберігання градацій навантаження
+    -- Define collection types to hold workload scale tiers
     TYPE t_volume_array IS TABLE OF NUMBER;
     v_main_volumes t_volume_array := t_volume_array(10000, 50000, 100000, 500000, 1000000);
     v_pareto_volumes t_volume_array := t_volume_array(5000, 10000, 20000, 30000, 50000);
@@ -12,28 +11,23 @@ DECLARE
     v_current_volume NUMBER;
     v_run_note VARCHAR2(50);
     
-    -- Допоміжна процедура для логування в консоль з часом
-    PROCEDURE log_msg(p_msg VARCHAR2) IS
-    BEGIN
-        DBMS_OUTPUT.PUT_LINE('[' || TO_CHAR(SYSDATE, 'HH24:MI:SS') || '] ' || p_msg);
-    END;
 BEGIN
-    log_msg('=== ПОЧАТОК ТЕСТУВАННЯ ===');
+    log_msg('=== BENCHMARK STARTED ===');
     
     ----------------------------------------------------------------------------
-    -- ЧАСТИНА 1: Тестування лінійних запитів (COUNT, AVG, COMBINED SEARCH)
+    -- PART 1: Linear query benchmarking (COUNT, AVG, COMBINED SEARCH)
     ----------------------------------------------------------------------------
-    log_msg('--- БЛОК 1: Основна шкала (COUNT, AVG, Combined Search) ---');
+    log_msg('--- BLOCK 1: Main Scale (COUNT, AVG, Combined Search) ---');
     
     FOR i IN 1 .. v_main_volumes.COUNT LOOP
         v_current_volume := v_main_volumes(i);
-        log_msg('>> Підготовка бази даних: генерація ' || v_current_volume || ' записів...');
+        log_msg('>> Preparing database: generating ' || v_current_volume || ' records...');
         
-        -- Виклик процедури генерації даних
+        -- Call data generation procedure
         prepare_test_environment(v_current_volume);
-        log_msg('   Генерація завершена. Запуск серії тестів...');
+        log_msg('   Data generation completed. Starting test suite...');
 
-        -- 3 прогони для кожної точки (перший прогрів і два робочих)
+        -- 3 runs for each data point (first is warm-up, followed by two benchmark runs)
         FOR run_num IN 1 .. 3 LOOP
             IF run_num = 1 THEN
                 v_run_note := 'Cold Cache - Run 1';
@@ -41,32 +35,32 @@ BEGIN
                 v_run_note := 'Warm Cache - Run ' || run_num;
             END IF;
             
-            log_msg('   -> Виконання ' || v_run_note);
+            log_msg('   -> Executing ' || v_run_note);
             
-            -- Запуск тестів
+            -- Execute test suites
             test_fuzzy_count_perf(v_current_volume, v_run_note);
             test_fuzzy_avg_perf(v_current_volume, v_run_note);
             test_combined_search_perf(v_current_volume, v_run_note);
         END LOOP;
         
-        log_msg('<< Тестування для ' || v_current_volume || ' записів завершено.');
+        log_msg('<< Benchmarking for ' || v_current_volume || ' records completed.');
         DBMS_OUTPUT.PUT_LINE('----------------------------------------------------');
     END LOOP;
 
 
     ----------------------------------------------------------------------------
-    -- ЧАСТИНА 2: Тестування алгоритму Парето O(n^2)
+    -- PART 2: Pareto set algorithm benchmarking O(n^2)
     ----------------------------------------------------------------------------
-    log_msg('--- БЛОК 2: Спеціальна шкала для множини Парето O(n^2) ---');
+    log_msg('--- BLOCK 2: Dedicated Scale for Pareto Frontier O(n^2) ---');
     
     FOR i IN 1 .. v_pareto_volumes.COUNT LOOP
         v_current_volume := v_pareto_volumes(i);
-        log_msg('>> Підготовка бази даних: генерація ' || v_current_volume || ' записів (Pareto)...');
+        log_msg('>> Preparing database: generating ' || v_current_volume || ' records (Pareto)...');
         
         prepare_test_environment(v_current_volume);
-        log_msg('   Генерація завершена. Запуск тестів Парето...');
+        log_msg('   Data generation completed. Starting Pareto tests...');
 
-        -- 3 прогони для кожної точки
+        -- 3 runs for each data point
         FOR run_num IN 1 .. 3 LOOP
             IF run_num = 1 THEN
                 v_run_note := 'Cold Cache - Run 1';
@@ -74,22 +68,22 @@ BEGIN
                 v_run_note := 'Warm Cache - Run ' || run_num;
             END IF;
             
-            log_msg('   -> Виконання ' || v_run_note);
+            log_msg('   -> Executing ' || v_run_note);
             
-            -- Запуск важкого тесту
+            -- Execute heavy computation test
             test_pareto_search_perf(v_current_volume, v_run_note);
         END LOOP;
         
-        log_msg('<< Тестування Парето для ' || v_current_volume || ' записів завершено.');
+        log_msg('<< Pareto benchmarking for ' || v_current_volume || ' records completed.');
         DBMS_OUTPUT.PUT_LINE('----------------------------------------------------');
     END LOOP;
 
-    log_msg('=== ВСІ ТЕСТИ УСПІШНО ЗАВЕРШЕНІ ===');
-    log_msg('Результати збережено в таблицю EXPERIMENT_RESULTS. Можна формувати звіти.');
+    log_msg('=== ALL TESTS COMPLETED SUCCESSFULLY ===');
+    log_msg('Results saved to EXPERIMENT_RESULTS table. Ready for reporting.');
     
 EXCEPTION
     WHEN OTHERS THEN
-        log_msg('!!! ПОМИЛКА ВИКОНАННЯ !!!');
+        log_msg('!!! EXECUTION ERROR !!!');
         log_msg(SQLERRM);
         ROLLBACK;
 END;

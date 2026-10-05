@@ -1,3 +1,12 @@
+
+Щоб слідкувати за прогресом періодично дивитися в таблицю логів
+
+SELECT TO_CHAR(log_time, 'HH24:MI:SS') AS time, message 
+FROM test_execution_log 
+ORDER BY log_id DESC;
+
+Отримати результати
+
 SELECT 
     query_type,
     architecture,
