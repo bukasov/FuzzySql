@@ -85,6 +85,12 @@ EXCEPTION
     WHEN OTHERS THEN
         log_msg('!!! EXECUTION ERROR !!!');
         log_msg(SQLERRM);
+        -- Гарантоване відновлення працездатності індексів у разі падіння
+        BEGIN
+            EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_prod_year_idx REBUILD';
+            EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_engine_cap_idx REBUILD';
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
         ROLLBACK;
 END;
 /
