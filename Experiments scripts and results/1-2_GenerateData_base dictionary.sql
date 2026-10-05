@@ -1,0 +1,50 @@
+/*
+ * Step: Initialize Schema Metadata and Reference Dictionaries
+ * -------------------------------------------------------------
+ * Clears existing test data and populates base lookup tables:
+ * - Entity classes and attributes (EAV schema metadata)
+ * - Linguistic Variable Values (LVV)
+ * - Membership Functions (MF) for fuzzy logic evaluations
+ */
+
+-- Clear
+TRUNCATE TABLE mf;
+TRUNCATE TABLE lvv;
+TRUNCATE TABLE value;
+TRUNCATE TABLE entity;
+TRUNCATE TABLE attribute;
+TRUNCATE TABLE class;
+
+-- Base class and attributes
+INSERT INTO class (class_id, class_name) VALUES (1, 'CAR');
+
+INSERT INTO attribute (attribute_id, class_id, attribute_name, attribute_type) VALUES (1, 1, 'TYPE', 'TEXT');
+INSERT INTO attribute (attribute_id, class_id, attribute_name, attribute_type) VALUES (2, 1, 'PROD_YEAR', 'NUMBER');
+INSERT INTO attribute (attribute_id, class_id, attribute_name, attribute_type) VALUES (3, 1, 'ENGINE_CAPACITY', 'NUMBER');
+INSERT INTO attribute (attribute_id, class_id, attribute_name, attribute_type) VALUES (4, 1, 'PRICE', 'NUMBER');
+
+-- LVV & MF (custom fuzzy set definitions)
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (1, 2, 'NEW');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (2, 2, 'AVERAGE');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (3, 2, 'OLD');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (4, 3, 'SMALL');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (5, 3, 'MIDDLE');
+INSERT INTO lvv(lvv_id, attribute_id, lvv) VALUES (6, 3, 'HIGH');
+
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (1, 1, 2010, 0, 2015, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (2, 1, 2015, 1, 2050, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (3, 2, 1995, 0, 2000, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (4, 2, 2000, 1, 2010, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (5, 2, 2010, 1, 2015, 0);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (6, 3, 0000, 1, 1995, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (7, 3, 1995, 1, 2000, 0);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (8, 4, 0, 0, 0.33, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (9, 4, 0.33, 1, 0.66, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (10, 4, 0.66, 1, 1, 0);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (11, 5, 0, 0, 1, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (12, 5, 1, 1, 1.6, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (13, 5, 1.6, 1, 2.5, 0);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (14, 6, 1.6, 0, 2.5, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (15, 6, 2.5, 1, 5, 1);
+INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (16, 6, 5, 1, 8, 0);
+COMMIT;
