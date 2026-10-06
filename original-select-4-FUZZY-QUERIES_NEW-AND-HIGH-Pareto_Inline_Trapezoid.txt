@@ -1,0 +1,49 @@
+-- META:
+-- SELECT *
+-- FROM tbl_cars
+-- WHERE prod_year IS 'NEW'
+-- AND engine_capacity IS 'HIGH'
+-- AND Pareto
+
+WITH raw_degrees AS (
+  -- 1. Обчислюємо ступені належності для всіх релевантних записів
+  SELECT c.id_sam, c.model, 
+         -- Обчислення d1 (prod_year = NEW)
+         CASE 
+           WHEN c.prod_year <= p1.a THEN 0.0
+           WHEN c.prod_year > p1.a AND c.prod_year <= p1.b THEN (c.prod_year - p1.a) / (p1.b - p1.a)
+           WHEN c.prod_year > p1.b AND c.prod_year <= p1.c THEN 1.0
+           WHEN c.prod_year > p1.c AND c.prod_year <= p1.d THEN (p1.d - c.prod_year) / (p1.d - p1.c)
+           ELSE 0.0
+         END AS d1,
+         -- Обчислення d2 (engine_capacity = HIGH)
+         CASE 
+           WHEN c.engine_capacity <= p2.a THEN 0.0
+           WHEN c.engine_capacity > p2.a AND c.engine_capacity <= p2.b THEN (c.engine_capacity - p2.a) / (p2.b - p2.a)
+           WHEN c.engine_capacity > p2.b AND c.engine_capacity <= p2.c THEN 1.0
+           WHEN c.engine_capacity > p2.c AND c.engine_capacity <= p2.d THEN (p2.d - c.engine_capacity) / (p2.d - p2.c)
+           ELSE 0.0
+         END AS d2
+  FROM tbl_cars c
+  CROSS JOIN tbl_possibility p1
+  CROSS JOIN tbl_possibility p2
+  WHERE p1.column_name = 'prod_year' AND p1.linguistic_variable_value = 'NEW'
+    AND p2.column_name = 'engine_capacity' AND p2.linguistic_variable_value = 'HIGH'
+    -- Попередня швидка фільтрація (> 0) для застосування індексів Range Scan
+    AND c.prod_year > p1.a AND c.prod_year < p1.d
+    AND c.engine_capacity > p2.a AND c.engine_capacity < p2.d
+),
+cars_degree AS (
+  -- 2. Фільтруємо ті, де ступінь >= 0.3 за обома критеріями
+  SELECT id_sam, model, d1, d2
+  FROM raw_degrees
+  WHERE d1 >= 0.3 AND d2 >= 0.3
+)
+-- 3. Формуємо множину Парето O(n^2)
+SELECT e1.id_sam, e1.model, ROUND(e1.d1, 2) AS d1, ROUND(e1.d2, 2) AS d2
+FROM cars_degree e1 
+LEFT JOIN cars_degree e2 
+  ON e2.d1 >= e1.d1 AND e2.d2 >= e1.d2 
+ AND (e2.d1 > e1.d1 OR e2.d2 > e1.d2)
+WHERE e2.id_sam IS NULL;
+

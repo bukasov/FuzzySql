@@ -1,0 +1,26 @@
+-- META:
+
+-- SELECT prod_year, FUZZY_AVG(price)
+-- FROM tbl_cars
+-- GROUP BY prod_year;
+
+-- SQL:
+
+SELECT linguistic_variable_value, 
+       ROUND(SUM(weight * price) / SUM(weight), 2) AS FUZZY_AVG
+FROM (
+    SELECT p.linguistic_variable_value, 
+           c.price,
+           CASE 
+             WHEN c.prod_year <= p.a THEN 0.0
+             WHEN c.prod_year > p.a AND c.prod_year <= p.b THEN (c.prod_year - p.a) / (p.b - p.a)
+             WHEN c.prod_year > p.b AND c.prod_year <= p.c THEN 1.0
+             WHEN c.prod_year > p.c AND c.prod_year <= p.d THEN (p.d - c.prod_year) / (p.d - p.c)
+             ELSE 0.0 
+           END AS weight
+    FROM tbl_cars c
+    JOIN tbl_possibility p ON p.column_name = 'prod_year'
+    -- Фільтрація нульової релевантності напряму для використання індексів tbl_cars
+    WHERE c.prod_year > p.a AND c.prod_year < p.d
+)
+GROUP BY linguistic_variable_value;

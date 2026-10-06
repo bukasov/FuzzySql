@@ -1,0 +1,22 @@
+-- META:
+-- SELECT *
+-- FROM tbl_cars
+-- WHERE prod_year IS 'NEW'
+-- AND engine_capacity IS 'HIGH'
+-- AND Pareto
+
+WITH cars_degree AS (
+  SELECT id_sam, model, 
+         -- Тут має бути inline обчислення ступеня замість функції
+         FP_TRAPEZOID(prod_year, 2010, 2015, 2050, 2050) AS d1, 
+         FP_TRAPEZOID(engine_capacity, 1.6, 2.5, 5, 8) AS d2
+  FROM tbl_cars
+  WHERE FP_TRAPEZOID(prod_year, 2010, 2015, 2050, 2050) >= 0.3 
+    AND FP_TRAPEZOID(engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
+)
+SELECT e1.id_sam, e1.model, e1.d1, e1.d2
+FROM cars_degree e1 
+LEFT JOIN cars_degree e2 
+  ON e2.d1 >= e1.d1 AND e2.d2 >= e1.d2 
+ AND (e2.d1 > e1.d1 OR e2.d2 > e1.d2)
+WHERE e2.id_sam IS NULL;
