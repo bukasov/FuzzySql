@@ -23,7 +23,8 @@ BEGIN
                    END AS weight
             FROM tbl_cars c
             JOIN tbl_possibility p ON p.column_name = 'prod_year'
-            WHERE c.prod_year > p.a AND c.prod_year < p.d
+            WHERE p.linguistic_variable_value = 'NEW' -- Ізолюємо цільову групу 2%
+              AND c.prod_year > p.a AND c.prod_year < p.d
         )
         GROUP BY linguistic_variable_value
     ) LOOP NULL; END LOOP;
@@ -53,7 +54,8 @@ BEGIN
                    END AS weight
             FROM tbl_cars c
             JOIN tbl_possibility p ON p.column_name = 'prod_year'
-            WHERE c.prod_year > p.a AND c.prod_year < p.d
+            WHERE p.linguistic_variable_value = 'NEW' -- Ізолюємо цільову групу 2%
+              AND c.prod_year > p.a AND c.prod_year < p.d
         )
         GROUP BY linguistic_variable_value
     ) LOOP NULL; END LOOP;
@@ -72,6 +74,7 @@ BEGIN
         FROM tbl_cars c, tbl_possibility p
         WHERE FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) > 0 
           AND p.column_name = 'prod_year'
+          AND p.linguistic_variable_value = 'NEW' -- Ізолюємо цільову групу 2%
         GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
@@ -93,6 +96,7 @@ BEGIN
         FROM tbl_cars c, tbl_possibility p
         WHERE FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) > 0 
           AND p.column_name = 'prod_year'
+          AND p.linguistic_variable_value = 'NEW' -- Ізолюємо цільову групу 2%
         GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
@@ -108,7 +112,8 @@ BEGIN
         FROM
         (SELECT entity_id, entity_name, lvv, y1+(NUMBER_VALUE-x1)*(y2-y1)/(x2-x1) AS weight
          FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id) JOIN lvv USING(attribute_id) JOIN mf USING(lvv_id)
-         WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2)
+         WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2
+           AND lvv = 'NEW') -- Ізолюємо цільову групу 2%
         JOIN
         (SELECT entity_id, number_value AS value
          FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id)

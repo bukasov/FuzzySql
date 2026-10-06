@@ -103,12 +103,12 @@ BEGIN
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
         WITH cars_degree AS (
-          SELECT id_sam, model, 
-                 FP_TRAPEZOID(prod_year, 2010, 2015, 2050, 2050) AS d1, 
-                 FP_TRAPEZOID(engine_capacity, 1.6, 2.5, 5, 8) AS d2
-          FROM tbl_cars
-          WHERE FP_TRAPEZOID(prod_year, 2010, 2015, 2050, 2050) >= 0.3 
-            AND FP_TRAPEZOID(engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
+          SELECT c.id_sam, c.model, 
+                 FP_TRAPEZOID(c.prod_year, 2010, 2015, 2050, 2050) AS d1, 
+                 FP_TRAPEZOID(c.engine_capacity, 1.6, 2.5, 5, 8) AS d2
+          FROM tbl_cars c
+          WHERE FP_TRAPEZOID(c.prod_year, 2010, 2015, 2050, 2050) >= 0.3 
+            AND FP_TRAPEZOID(c.engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
         )
         SELECT e1.id_sam, e1.model, e1.d1, e1.d2
         FROM cars_degree e1 
@@ -131,12 +131,12 @@ BEGIN
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
         WITH cars_degree AS (
-          SELECT id_sam, model, 
-                 FP_TRAPEZOID(prod_year, 2010, 2015, 2050, 2050) AS d1, 
-                 FP_TRAPEZOID(engine_capacity, 1.6, 2.5, 5, 8) AS d2
-          FROM tbl_cars
-          WHERE FP_TRAPEZOID(prod_year, 2010, 2015, 2050, 2050) >= 0.3 
-            AND FP_TRAPEZOID(engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
+          SELECT c.id_sam, c.model, 
+                 FP_TRAPEZOID(c.prod_year, 2010, 2015, 2050, 2050) AS d1, 
+                 FP_TRAPEZOID(c.engine_capacity, 1.6, 2.5, 5, 8) AS d2
+          FROM tbl_cars c
+          WHERE FP_TRAPEZOID(c.prod_year, 2010, 2015, 2050, 2050) >= 0.3 
+            AND FP_TRAPEZOID(c.engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
         )
         SELECT e1.id_sam, e1.model, e1.d1, e1.d2
         FROM cars_degree e1 

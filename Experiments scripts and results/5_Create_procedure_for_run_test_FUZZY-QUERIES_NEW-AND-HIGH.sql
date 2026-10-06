@@ -83,13 +83,13 @@ BEGIN
         SELECT *
         FROM (
           SELECT c.model, c.type, c.prod_year, c.engine_capacity,
-            MIN(CASE column_name
-                WHEN 'prod_year' THEN FP_TRAPEZOID(prod_year,a,b,c,d)
-                WHEN 'engine_capacity' THEN FP_TRAPEZOID(engine_capacity,a,b,c,d) 
+            MIN(CASE p.column_name
+                WHEN 'prod_year' THEN FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d)
+                WHEN 'engine_capacity' THEN FP_TRAPEZOID(c.engine_capacity, p.a, p.b, p.c, p.d) 
                 END) AS FUZZY_DEGREE
-          FROM tbl_cars c, tbl_possibility
-          WHERE (linguistic_variable_value='NEW' or linguistic_variable_value='HIGH') 
-            AND (column_name='prod_year' or column_name='engine_capacity')
+          FROM tbl_cars c, tbl_possibility p
+          WHERE (p.linguistic_variable_value = 'NEW' OR p.linguistic_variable_value = 'HIGH') 
+            AND (p.column_name = 'prod_year' OR p.column_name = 'engine_capacity')
           GROUP BY c.model, c.type, c.prod_year, c.engine_capacity
         ) 
         WHERE FUZZY_DEGREE > 0
@@ -110,13 +110,13 @@ BEGIN
         SELECT *
         FROM (
           SELECT c.model, c.type, c.prod_year, c.engine_capacity,
-            MIN(CASE column_name
-                WHEN 'prod_year' THEN FP_TRAPEZOID(prod_year,a,b,c,d)
-                WHEN 'engine_capacity' THEN FP_TRAPEZOID(engine_capacity,a,b,c,d) 
+            MIN(CASE p.column_name
+                WHEN 'prod_year' THEN FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d)
+                WHEN 'engine_capacity' THEN FP_TRAPEZOID(c.engine_capacity, p.a, p.b, p.c, p.d) 
                 END) AS FUZZY_DEGREE
-          FROM tbl_cars c, tbl_possibility
-          WHERE (linguistic_variable_value='NEW' or linguistic_variable_value='HIGH') 
-            AND (column_name='prod_year' or column_name='engine_capacity')
+          FROM tbl_cars c, tbl_possibility p
+          WHERE (p.linguistic_variable_value = 'NEW' OR p.linguistic_variable_value = 'HIGH') 
+            AND (p.column_name = 'prod_year' OR p.column_name = 'engine_capacity')
           GROUP BY c.model, c.type, c.prod_year, c.engine_capacity
         ) 
         WHERE FUZZY_DEGREE > 0

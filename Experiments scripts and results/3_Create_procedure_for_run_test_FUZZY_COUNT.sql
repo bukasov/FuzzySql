@@ -20,6 +20,7 @@ BEGIN
                ), 2) AS FUZZY_COUNT
         FROM tbl_possibility p, tbl_cars c
         WHERE p.column_name = 'engine_capacity'
+          AND p.linguistic_variable_value = 'HIGH' -- Ізолюємо цільову групу 2%
           AND c.engine_capacity > p.a 
           AND c.engine_capacity < p.d
         GROUP BY p.linguistic_variable_value
@@ -48,6 +49,7 @@ BEGIN
                ), 2) AS FUZZY_COUNT
         FROM tbl_possibility p, tbl_cars c
         WHERE p.column_name = 'engine_capacity'
+          AND p.linguistic_variable_value = 'HIGH' -- Ізолюємо цільову групу 2%
           AND c.engine_capacity > p.a 
           AND c.engine_capacity < p.d
         GROUP BY p.linguistic_variable_value
@@ -66,6 +68,7 @@ BEGIN
         FROM tbl_cars c, tbl_possibility p
         WHERE FP_TRAPEZOID(c.engine_capacity,p.a,p.b,p.c,p.d)>0 
           AND p.column_name='engine_capacity'
+          AND p.linguistic_variable_value = 'HIGH' -- Ізолюємо цільову групу 2%
         GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
@@ -86,6 +89,7 @@ BEGIN
         FROM tbl_cars c, tbl_possibility p
         WHERE FP_TRAPEZOID(c.engine_capacity,p.a,p.b,p.c,p.d)>0 
           AND p.column_name='engine_capacity'
+          AND p.linguistic_variable_value = 'HIGH' -- Ізолюємо цільову групу 2%
         GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
@@ -105,6 +109,7 @@ BEGIN
             JOIN lvv USING(attribute_id)
             JOIN mf USING(lvv_id)
         WHERE attribute_id=3 AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+          AND lvv = 'HIGH' -- Ізолюємо цільову групу 2%
         GROUP BY lvv
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
