@@ -9,7 +9,8 @@ BEGIN
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
         WITH raw_degrees AS (
-          SELECT c.id_sam, c.model, 
+          SELECT /*+ USE_NL(p1 p2 c) INDEX(c tbl_cars_prod_year_idx) */ 
+                 c.id_sam, c.model, 
                  CASE 
                    WHEN c.prod_year <= p1.a THEN 0.0
                    WHEN c.prod_year > p1.a AND c.prod_year <= p1.b THEN (c.prod_year - p1.a) / (p1.b - p1.a)

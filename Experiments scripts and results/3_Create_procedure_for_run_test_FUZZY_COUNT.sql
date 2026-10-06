@@ -1,28 +1,28 @@
 CREATE OR REPLACE PROCEDURE test_fuzzy_count_perf(p_data_volume IN NUMBER, p_notes IN VARCHAR2) IS
     v_start_time TIMESTAMP;
     v_end_time TIMESTAMP;
-
 BEGIN
     ---------------------------------------------------------
     -- 1. FLAT TABLE (Inline CASE + Indexes)
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT linguistic_variable_value, 
+        SELECT /*+ USE_NL(p c) INDEX(c tbl_cars_engine_cap_idx) */ 
+               p.linguistic_variable_value, 
                ROUND(SUM(
                  CASE
-                   WHEN engine_capacity <= a THEN 0.0
-                   WHEN engine_capacity > a AND engine_capacity <= b THEN (engine_capacity - a) / (b - a)
-                   WHEN engine_capacity > b AND engine_capacity <= c THEN 1.0
-                   WHEN engine_capacity > c AND engine_capacity <= d THEN (d - engine_capacity) / (d - c)
+                   WHEN c.engine_capacity <= p.a THEN 0.0
+                   WHEN c.engine_capacity > p.a AND c.engine_capacity <= p.b THEN (c.engine_capacity - p.a) / (p.b - p.a)
+                   WHEN c.engine_capacity > p.b AND c.engine_capacity <= p.c THEN 1.0
+                   WHEN c.engine_capacity > p.c AND c.engine_capacity <= p.d THEN (p.d - c.engine_capacity) / (p.d - p.c)
                    ELSE 0.0
                  END
                ), 2) AS FUZZY_COUNT
-        FROM tbl_cars, tbl_possibility
-        WHERE column_name = 'engine_capacity'
-          AND engine_capacity > a 
-          AND engine_capacity < d
-        GROUP BY linguistic_variable_value
+        FROM tbl_possibility p, tbl_cars c
+        WHERE p.column_name = 'engine_capacity'
+          AND c.engine_capacity > p.a 
+          AND c.engine_capacity < p.d
+        GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
@@ -36,21 +36,21 @@ BEGIN
 
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT linguistic_variable_value, 
+        SELECT p.linguistic_variable_value, 
                ROUND(SUM(
                  CASE
-                   WHEN engine_capacity <= a THEN 0.0
-                   WHEN engine_capacity > a AND engine_capacity <= b THEN (engine_capacity - a) / (b - a)
-                   WHEN engine_capacity > b AND engine_capacity <= c THEN 1.0
-                   WHEN engine_capacity > c AND engine_capacity <= d THEN (d - engine_capacity) / (d - c)
+                   WHEN c.engine_capacity <= p.a THEN 0.0
+                   WHEN c.engine_capacity > p.a AND c.engine_capacity <= p.b THEN (c.engine_capacity - p.a) / (p.b - p.a)
+                   WHEN c.engine_capacity > p.b AND c.engine_capacity <= p.c THEN 1.0
+                   WHEN c.engine_capacity > p.c AND c.engine_capacity <= p.d THEN (p.d - c.engine_capacity) / (p.d - p.c)
                    ELSE 0.0
                  END
                ), 2) AS FUZZY_COUNT
-        FROM tbl_cars, tbl_possibility
-        WHERE column_name = 'engine_capacity'
-          AND engine_capacity > a 
-          AND engine_capacity < d
-        GROUP BY linguistic_variable_value
+        FROM tbl_possibility p, tbl_cars c
+        WHERE p.column_name = 'engine_capacity'
+          AND c.engine_capacity > p.a 
+          AND c.engine_capacity < p.d
+        GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
@@ -61,12 +61,12 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT linguistic_variable_value, 
-               ROUND(SUM(FP_TRAPEZOID(engine_capacity,a,b,c,d)),2) AS FUZZY_COUNT
-        FROM tbl_cars, tbl_possibility
-        WHERE FP_TRAPEZOID(engine_capacity,a,b,c,d)>0 
-          AND column_name='engine_capacity'
-        GROUP BY linguistic_variable_value
+        SELECT p.linguistic_variable_value, 
+               ROUND(SUM(FP_TRAPEZOID(c.engine_capacity,p.a,p.b,p.c,p.d)),2) AS FUZZY_COUNT
+        FROM tbl_cars c, tbl_possibility p
+        WHERE FP_TRAPEZOID(c.engine_capacity,p.a,p.b,p.c,p.d)>0 
+          AND p.column_name='engine_capacity'
+        GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
@@ -81,12 +81,12 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT linguistic_variable_value, 
-               ROUND(SUM(FP_TRAPEZOID(engine_capacity,a,b,c,d)),2) AS FUZZY_COUNT
-        FROM tbl_cars, tbl_possibility
-        WHERE FP_TRAPEZOID(engine_capacity,a,b,c,d)>0 
-          AND column_name='engine_capacity'
-        GROUP BY linguistic_variable_value
+        SELECT p.linguistic_variable_value, 
+               ROUND(SUM(FP_TRAPEZOID(c.engine_capacity,p.a,p.b,p.c,p.d)),2) AS FUZZY_COUNT
+        FROM tbl_cars c, tbl_possibility p
+        WHERE FP_TRAPEZOID(c.engine_capacity,p.a,p.b,p.c,p.d)>0 
+          AND p.column_name='engine_capacity'
+        GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)

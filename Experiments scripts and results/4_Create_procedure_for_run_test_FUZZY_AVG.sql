@@ -11,7 +11,8 @@ BEGIN
         SELECT linguistic_variable_value, 
                ROUND(SUM(weight * price) / SUM(weight), 2) AS FUZZY_AVG
         FROM (
-            SELECT p.linguistic_variable_value, 
+            SELECT /*+ USE_NL(p c) INDEX(c tbl_cars_prod_year_idx) */
+                   p.linguistic_variable_value, 
                    c.price,
                    CASE 
                      WHEN c.prod_year <= p.a THEN 0.0
@@ -65,13 +66,13 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT linguistic_variable_value, ROUND(
-          SUM(FP_TRAPEZOID(prod_year,a,b,c,d)*price ) /
-          SUM(FP_TRAPEZOID(prod_year,a,b,c,d)),2) AS FUZZY_AVG
-        FROM tbl_cars, tbl_possibility
-        WHERE FP_TRAPEZOID(prod_year,a,b,c,d)>0 
-          AND column_name='prod_year'
-        GROUP BY linguistic_variable_value
+        SELECT p.linguistic_variable_value, ROUND(
+          SUM(FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) * c.price) /
+          SUM(FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d)), 2) AS FUZZY_AVG
+        FROM tbl_cars c, tbl_possibility p
+        WHERE FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) > 0 
+          AND p.column_name = 'prod_year'
+        GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
@@ -86,13 +87,13 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT linguistic_variable_value, ROUND(
-          SUM(FP_TRAPEZOID(prod_year,a,b,c,d)*price ) /
-          SUM(FP_TRAPEZOID(prod_year,a,b,c,d)),2) AS FUZZY_AVG
-        FROM tbl_cars, tbl_possibility
-        WHERE FP_TRAPEZOID(prod_year,a,b,c,d)>0 
-          AND column_name='prod_year'
-        GROUP BY linguistic_variable_value
+        SELECT p.linguistic_variable_value, ROUND(
+          SUM(FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) * c.price) /
+          SUM(FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d)), 2) AS FUZZY_AVG
+        FROM tbl_cars c, tbl_possibility p
+        WHERE FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) > 0 
+          AND p.column_name = 'prod_year'
+        GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)

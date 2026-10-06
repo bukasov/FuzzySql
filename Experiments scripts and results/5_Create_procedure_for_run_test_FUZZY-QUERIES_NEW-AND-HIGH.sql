@@ -8,7 +8,8 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT c.model, c.type, c.prod_year, c.engine_capacity,
+        SELECT /*+ USE_NL(p1 p2 c) INDEX(c tbl_cars_prod_year_idx) */
+               c.model, c.type, c.prod_year, c.engine_capacity,
                LEAST(
                  CASE 
                    WHEN c.prod_year <= p1.a THEN 0.0
