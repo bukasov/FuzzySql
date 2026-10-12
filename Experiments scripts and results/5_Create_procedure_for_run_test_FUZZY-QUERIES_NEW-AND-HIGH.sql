@@ -36,7 +36,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_INLINE', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_INLINE_IDX', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 2. FLAT TABLE (Inline CASE - NO INDEXES)
@@ -73,7 +73,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_INLINE_NO_IDX', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_INLINE', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 3. FLAT TABLE (Function FP_TRAPEZOID - NO INDEXES)
@@ -89,14 +89,18 @@ BEGIN
                 END) AS FUZZY_DEGREE
           FROM tbl_cars c, tbl_possibility p
           WHERE (p.linguistic_variable_value = 'NEW' OR p.linguistic_variable_value = 'HIGH') 
-            AND (p.column_name = 'prod_year' OR p.column_name = 'engine_capacity')
+            AND (
+			  (p.column_name = 'prod_year' AND c.prod_year > p.a AND c.prod_year < p.d) 
+			  OR 
+			  (p.column_name = 'engine_capacity' AND c.engine_capacity > p.a AND c.engine_capacity < p.d)
+		  )
           GROUP BY c.model, c.type, c.prod_year, c.engine_capacity
         ) 
         WHERE FUZZY_DEGREE > 0
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_FUNCTION_NO_IDX', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     -- Відновлення індексів
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_prod_year_idx REBUILD';
@@ -116,14 +120,18 @@ BEGIN
                 END) AS FUZZY_DEGREE
           FROM tbl_cars c, tbl_possibility p
           WHERE (p.linguistic_variable_value = 'NEW' OR p.linguistic_variable_value = 'HIGH') 
-            AND (p.column_name = 'prod_year' OR p.column_name = 'engine_capacity')
+            AND (
+			  (p.column_name = 'prod_year' AND c.prod_year > p.a AND c.prod_year < p.d) 
+			  OR 
+			  (p.column_name = 'engine_capacity' AND c.engine_capacity > p.a AND c.engine_capacity < p.d)
+		  )
           GROUP BY c.model, c.type, c.prod_year, c.engine_capacity
         ) 
         WHERE FUZZY_DEGREE > 0
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_FUNCTION', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_IDX', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 5. EAV MODEL (Запропонований підхід)

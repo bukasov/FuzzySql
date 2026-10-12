@@ -47,7 +47,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_INLINE', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_INLINE_IDX', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 2. FLAT TABLE (Inline CASE - NO INDEXES)
@@ -95,7 +95,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_INLINE_NO_IDX', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_INLINE', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 3. FLAT TABLE (Function FP_TRAPEZOID - NO INDEXES)
@@ -109,6 +109,8 @@ BEGIN
           FROM tbl_cars c
           WHERE FP_TRAPEZOID(c.prod_year, 2010, 2015, 2050, 2050) >= 0.3 
             AND FP_TRAPEZOID(c.engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
+			AND c.prod_year > 2010 AND c.prod_year < 2050
+			AND c.engine_capacity > 1.6 AND c.engine_capacity < 8
         )
         SELECT e1.id_sam, e1.model, e1.d1, e1.d2
         FROM cars_degree e1 
@@ -119,7 +121,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_FUNCTION_NO_IDX', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     -- Відновлення індексів
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_prod_year_idx REBUILD';
@@ -137,6 +139,8 @@ BEGIN
           FROM tbl_cars c
           WHERE FP_TRAPEZOID(c.prod_year, 2010, 2015, 2050, 2050) >= 0.3 
             AND FP_TRAPEZOID(c.engine_capacity, 1.6, 2.5, 5, 8) >= 0.3
+			AND c.prod_year > 2010 AND c.prod_year < 2050
+			AND c.engine_capacity > 1.6 AND c.engine_capacity < 8
         )
         SELECT e1.id_sam, e1.model, e1.d1, e1.d2
         FROM cars_degree e1 
@@ -147,7 +151,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_FUNCTION', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_IDX', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 5. EAV MODEL

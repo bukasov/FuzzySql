@@ -30,7 +30,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_INLINE', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_INLINE_IDX', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 2. FLAT TABLE (Inline CASE - NO INDEXES)
@@ -61,7 +61,7 @@ BEGIN
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_INLINE_NO_IDX', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_INLINE', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 3. FLAT TABLE (Function FP_TRAPEZOID - NO INDEXES)
@@ -75,11 +75,12 @@ BEGIN
         WHERE FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) > 0 
           AND p.column_name = 'prod_year'
           AND p.linguistic_variable_value = 'NEW' -- Ізолюємо цільову групу 2%
+		  AND c.prod_year > p.a AND c.prod_year < p.d
         GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_FUNCTION_NO_IDX', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     -- Відновлення індексів
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_prod_year_idx REBUILD';
@@ -97,11 +98,12 @@ BEGIN
         WHERE FP_TRAPEZOID(c.prod_year, p.a, p.b, p.c, p.d) > 0 
           AND p.column_name = 'prod_year'
           AND p.linguistic_variable_value = 'NEW' -- Ізолюємо цільову групу 2%
+		  AND c.prod_year > p.a AND c.prod_year < p.d
         GROUP BY p.linguistic_variable_value
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
-    VALUES (p_data_volume, 'FLAT_TABLE_FUNCTION', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
+    VALUES (p_data_volume, 'FLAT_TABLE_IDX', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
     -- 5. EAV MODEL (Запропонований підхід)
