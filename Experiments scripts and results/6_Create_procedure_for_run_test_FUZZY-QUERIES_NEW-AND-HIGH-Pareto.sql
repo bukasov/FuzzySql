@@ -158,26 +158,47 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        WITH entities(entity_id, entity_name, d1, d2) AS (
-        SELECT entity_id, c1.entity_name
-          ,ROUND(c1.degree, 2) AS year_is_new_degree
-          ,ROUND(c2.degree, 2) AS engine_capacity_is_high_degree
-        FROM 
-          (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
-          FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id) JOIN lvv USING(attribute_id) JOIN mf USING(lvv_id)
-          WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 AND lvv='NEW') c1 
-        INNER JOIN
-          (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
-          FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id) JOIN lvv USING(attribute_id) JOIN mf USING(lvv_id)
-          WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=3 AND lvv='HIGH') c2
-        USING(entity_id)
-        WHERE LEAST(c1.degree, c2.degree) >= 0.3)
+		WITH entities AS (
+			SELECT entity_id, c1.entity_name
+			  ,LEAST(c1.degree, c2.degree) AS FUZZY_DEGREE_MIN 
+			  ,c1.degree * c2.degree AS FUZZY_DEGREE_PROD 
+			  ,c1.degree AS d1
+			  ,c2.degree AS d2
+			FROM (
+				-- Підзапит 1: Ізолюємо 'NEW' з допомогою Bounding Box
+				SELECT entity_id, entity.entity_name, y1 + (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
+				FROM lvv
+				JOIN (SELECT lvv_id, MIN(x1) AS min_x, MAX(x2) AS max_x FROM mf GROUP BY lvv_id) bnds USING (lvv_id)
+				JOIN value USING(attribute_id) 
+				JOIN entity USING(entity_id) 
+				JOIN mf USING(lvv_id)
+				WHERE attribute_id = 2 
+				  AND lvv = 'NEW'
+				  AND NUMBER_VALUE > min_x AND NUMBER_VALUE < max_x -- Активація індексу
+				  AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+			  ) c1 
+			INNER JOIN (
+				-- Підзапит 2: Ізолюємо 'HIGH' з допомогою Bounding Box
+				SELECT entity_id, entity.entity_name, y1 + (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
+				FROM lvv
+				JOIN (SELECT lvv_id, MIN(x1) AS min_x, MAX(x2) AS max_x FROM mf GROUP BY lvv_id) bnds USING (lvv_id)
+				JOIN value USING(attribute_id) 
+				JOIN entity USING(entity_id) 
+				JOIN mf USING(lvv_id)
+				WHERE attribute_id = 3 
+				  AND lvv = 'HIGH'
+				  AND NUMBER_VALUE > min_x AND NUMBER_VALUE < max_x -- Активація індексу
+				  AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+			) c2
+			USING(entity_id)
+			WHERE c1.degree > 0 AND c2.degree > 0		
+		)
+		
         SELECT e1.entity_id, e1.entity_name, e1.d1 AS YEAR_IS_NEW_DEGREE, e1.d2 AS ENGINE_CAPACITY_IS_MIDDLE_DEGREE
         FROM entities e1 LEFT JOIN entities e2 
         ON e2.d1 >= e1.d1 AND e2.d2 >= e1.d2
         AND (e2.d1 > e1.d1 OR e2.d2 > e1.d2)
-        WHERE e2.entity_id IS NULL
-    ) LOOP NULL; END LOOP;
+        WHERE e2.entity_id IS NULL    ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
     VALUES (p_data_volume, 'EAV_MODEL', 'PARETO_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);

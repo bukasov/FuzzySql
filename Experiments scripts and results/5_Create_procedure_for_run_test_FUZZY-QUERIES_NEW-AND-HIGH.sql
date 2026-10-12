@@ -138,19 +138,47 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-        SELECT entity_id, c1.entity_name
+		SELECT entity_id, c1.entity_name
           ,LEAST(c1.degree, c2.degree) AS FUZZY_DEGREE_MIN 
           ,c1.degree * c2.degree AS FUZZY_DEGREE_PROD 
           ,c1.degree AS year_is_new_degree
           ,c2.degree AS engine_capacity_is_high_degree
         FROM 
-          (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
-          FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id) JOIN lvv USING(attribute_id) JOIN mf USING(lvv_id)
-          WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=2 AND lvv='NEW') c1 
+          (
+            -- Підзапит 1: Ізолюємо 'NEW' з допомогою Bounding Box
+            SELECT entity_id, entity.entity_name, y1 + (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
+            FROM lvv
+            JOIN (
+				SELECT lvv_id, MIN(x1) AS min_x, MAX(x2) AS max_x 
+				FROM mf 
+				GROUP BY lvv_id
+			) bnds USING (lvv_id)
+            JOIN value USING(attribute_id) 
+            JOIN entity USING(entity_id) 
+            JOIN mf USING(lvv_id)
+            WHERE attribute_id = 2 
+              AND lvv = 'NEW'
+              AND NUMBER_VALUE > min_x AND NUMBER_VALUE < max_x -- Активація індексу
+              AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+          ) c1 
         INNER JOIN
-          (SELECT entity_id, entity.entity_name, y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
-          FROM entity JOIN value USING(entity_id) JOIN attribute USING(attribute_id) JOIN lvv USING(attribute_id) JOIN mf USING(lvv_id)
-          WHERE NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2 AND attribute_id=3 AND lvv='HIGH') c2
+          (
+            -- Підзапит 2: Ізолюємо 'HIGH' з допомогою Bounding Box
+            SELECT entity_id, entity.entity_name, y1 + (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
+            FROM lvv
+            JOIN (
+				SELECT lvv_id, MIN(x1) AS min_x, MAX(x2) AS max_x 
+				FROM mf 
+				GROUP BY lvv_id
+			) bnds USING (lvv_id)
+            JOIN value USING(attribute_id) 
+            JOIN entity USING(entity_id) 
+            JOIN mf USING(lvv_id)
+            WHERE attribute_id = 3 
+              AND lvv = 'HIGH'
+              AND NUMBER_VALUE > min_x AND NUMBER_VALUE < max_x -- Активація індексу
+              AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+          ) c2
         USING(entity_id)
         WHERE c1.degree > 0 AND c2.degree > 0
     ) LOOP NULL; END LOOP;
