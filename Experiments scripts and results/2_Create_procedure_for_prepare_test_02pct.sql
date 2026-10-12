@@ -17,7 +17,7 @@ BEGIN
     EXECUTE IMMEDIATE 'TRUNCATE TABLE entity';
     EXECUTE IMMEDIATE 'TRUNCATE TABLE tbl_cars';
 
-    -- 3. Генерація для класичної таблиці (Sparse Data: 1% релевантних, 99% шуму)
+    -- 3. Генерація для класичної таблиці (Sparse Data: 2% релевантних, 98% шуму)
     EXECUTE IMMEDIATE 'INSERT /*+ APPEND */ INTO tbl_cars (id_sam, model, type, prod_year, engine_capacity, price)
     SELECT 
         LEVEL,
@@ -30,12 +30,12 @@ BEGIN
         END,
         -- Sparse кластеризація по роках:
         CASE 
-            WHEN MOD(LEVEL, 100) < 1 THEN TRUNC(DBMS_RANDOM.VALUE(2012, 2022)) -- 1% релевантних (задовольняють NEW)
+            WHEN MOD(LEVEL, 100) < 2 THEN TRUNC(DBMS_RANDOM.VALUE(2012, 2022)) -- 1% релевантних (задовольняють NEW)
             ELSE TRUNC(DBMS_RANDOM.VALUE(1990, 2009))                          -- 99% шуму (відсіюються)
         END AS prod_year,
         -- Sparse кластеризація по об''єму двигуна:
         CASE 
-            WHEN MOD(LEVEL, 100) < 1 THEN ROUND(DBMS_RANDOM.VALUE(2.0, 5.0), 1) -- 1% релевантних (задовольняють HIGH)
+            WHEN MOD(LEVEL, 100) < 2 THEN ROUND(DBMS_RANDOM.VALUE(2.0, 5.0), 1) -- 1% релевантних (задовольняють HIGH)
             ELSE ROUND(DBMS_RANDOM.VALUE(1.0, 1.5), 1)                          -- 99% шуму (відсіюються)
         END AS engine_capacity,
         ROUND(DBMS_RANDOM.VALUE(2000, 80000), -2) AS price
@@ -47,7 +47,7 @@ BEGIN
     SELECT id_sam, 1, model FROM tbl_cars';
     COMMIT;
 
-    -- 5. Генерація значень для EAV (автоматично успадковує 5% селективність з tbl_cars)
+    -- 5. Генерація значень для EAV (автоматично успадковує 2% селективність з tbl_cars)
     EXECUTE IMMEDIATE 'INSERT /*+ APPEND */ INTO value (value_id, entity_id, attribute_id, text_value, number_value)
     -- Основні 4 атрибути (відповідають tbl_cars)
     SELECT (id_sam - 1) * 8 + 1, id_sam, 1, type, NULL FROM tbl_cars UNION ALL
