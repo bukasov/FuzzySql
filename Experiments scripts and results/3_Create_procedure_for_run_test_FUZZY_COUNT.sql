@@ -106,21 +106,15 @@ BEGIN
 		SELECT lvv AS linguistic_variable_value, 
                ROUND(SUM(y1+ (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1)),2) AS fuzzy_count
         FROM lvv 
-            -- 1. Створюємо Bounding Box (рамку) для кожної лінгвістичної змінної
-            JOIN (
-				SELECT lvv_id, MIN(x1) AS min_x, MAX(x2) AS max_x 
-				FROM mf 
-				GROUP BY lvv_id
-			) bnds USING(lvv_id)
             JOIN value USING(attribute_id)
             JOIN entity USING(entity_id)
             JOIN mf USING(lvv_id)
         WHERE attribute_id = 3 
           AND lvv = 'HIGH' -- Ізолюємо цільову групу 2%
-          -- 2. Використовуємо Bounding Box для миттєвого спрацювання індексу на value
-          AND NUMBER_VALUE > min_x AND NUMBER_VALUE < max_x
-          -- 3. Точна перевірка по сегментах для розрахунку ваги
-          AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+          -- Використовуємо закешований Bounding Box з таблиці lvv
+          AND NUMBER_VALUE > lvv.bnd_min AND NUMBER_VALUE < lvv.bnd_max
+          -- Точна перевірка по сегментах
+          AND NUMBER_VALUE >= mf.x1 AND NUMBER_VALUE < mf.x2
         GROUP BY lvv
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;

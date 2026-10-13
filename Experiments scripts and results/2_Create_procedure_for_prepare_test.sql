@@ -8,6 +8,8 @@ BEGIN
     EXECUTE IMMEDIATE 'ALTER INDEX value_entity_id_idx UNUSABLE';
     EXECUTE IMMEDIATE 'ALTER INDEX value_attribute_id_idx UNUSABLE';
     EXECUTE IMMEDIATE 'ALTER INDEX value_number_value_idx UNUSABLE';
+
+    EXECUTE IMMEDIATE 'ALTER INDEX value_attr_num_idx UNUSABLE';
     
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_prod_year_idx UNUSABLE';
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_engine_cap_idx UNUSABLE';
@@ -67,6 +69,8 @@ BEGIN
     EXECUTE IMMEDIATE 'ALTER INDEX value_entity_id_idx REBUILD';
     EXECUTE IMMEDIATE 'ALTER INDEX value_attribute_id_idx REBUILD';
     EXECUTE IMMEDIATE 'ALTER INDEX value_number_value_idx REBUILD';
+
+    EXECUTE IMMEDIATE 'ALTER INDEX value_attr_num_idx REBUILD';
     
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_prod_year_idx REBUILD';
     EXECUTE IMMEDIATE 'ALTER INDEX tbl_cars_engine_cap_idx REBUILD';

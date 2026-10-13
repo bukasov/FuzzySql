@@ -88,6 +88,12 @@ INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (15, 6, 2.5, 1, 5, 1);
 INSERT INTO mf(mf_id, lvv_id, x1, y1, x2, y2) VALUES (16, 6, 5, 1, 8, 0);
 COMMIT;
 
+-- Кешування меж (Bounding Box) для лінгвістичних термів
+UPDATE lvv l
+SET bnd_min = (SELECT MIN(x1) FROM mf WHERE mf.lvv_id = l.lvv_id),
+    bnd_max = (SELECT MAX(x2) FROM mf WHERE mf.lvv_id = l.lvv_id);
+COMMIT;
+
 -- Indexes rebuild
 ALTER INDEX attribute_class_id_idx REBUILD;
 ALTER INDEX lvv_attribute_id_idx REBUILD;
@@ -96,6 +102,7 @@ ALTER INDEX mf_lvv_id_idx REBUILD;
 ALTER INDEX value_entity_id_idx REBUILD;
 ALTER INDEX value_attribute_id_idx REBUILD;
 ALTER INDEX value_number_value_idx REBUILD;
+ALTER INDEX value_attr_num_idx REBUILD;
 
 -- Enable constraints
 ALTER TABLE attribute ENABLE CONSTRAINT attribute_class_fk;
@@ -105,3 +112,9 @@ ALTER TABLE mf ENABLE CONSTRAINT mf_lvv_fk;
 ALTER TABLE value ENABLE CONSTRAINT value_entity_attribute_uq;
 ALTER TABLE value ENABLE CONSTRAINT value_entity_fk;
 ALTER TABLE value ENABLE CONSTRAINT value_attribute_fk;
+
+-- Збір статистики для словників
+EXECUTE DBMS_STATS.GATHER_TABLE_STATS(USER, 'CLASS', cascade => TRUE);
+EXECUTE DBMS_STATS.GATHER_TABLE_STATS(USER, 'ATTRIBUTE', cascade => TRUE);
+EXECUTE DBMS_STATS.GATHER_TABLE_STATS(USER, 'LVV', cascade => TRUE);
+EXECUTE DBMS_STATS.GATHER_TABLE_STATS(USER, 'MF', cascade => TRUE);

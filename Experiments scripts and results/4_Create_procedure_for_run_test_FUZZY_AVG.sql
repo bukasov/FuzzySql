@@ -110,28 +110,21 @@ BEGIN
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-SELECT lvv AS linguistic_variable_value, 
+		SELECT lvv AS linguistic_variable_value, 
                ROUND(SUM(weight * value) / SUM(weight), 2) AS FUZZY_AVG
         FROM
         (
             SELECT entity_id, entity_name, lvv, 
-				y1 + (NUMBER_VALUE - x1) * (y2 - y1) / (x2 - x1) AS weight
+                y1 + (NUMBER_VALUE - x1) * (y2 - y1) / (x2 - x1) AS weight
             FROM lvv
-            -- 1. Визначаємо глобальний Bounding Box для терму
-            JOIN (
-                SELECT lvv_id, MIN(x1) AS min_x, MAX(x2) AS max_x 
-                FROM mf 
-                GROUP BY lvv_id
-            ) bnds USING (lvv_id)
             JOIN value USING (attribute_id)
             JOIN entity USING (entity_id)
             JOIN mf USING (lvv_id)
             WHERE attribute_id = 2
-              AND lvv = 'NEW' -- Ізолюємо цільову групу 2%
-              -- 2. Bounding Box активує індексний доступ до таблиці value
-              AND NUMBER_VALUE > min_x AND NUMBER_VALUE < max_x
-              -- 3. Точна перевірка належності до сегмента трапеції
-              AND NUMBER_VALUE >= x1 AND NUMBER_VALUE < x2
+              AND lvv = 'NEW' 
+              -- Кешовані межі з lvv
+              AND NUMBER_VALUE > lvv.bnd_min AND NUMBER_VALUE < lvv.bnd_max
+              AND NUMBER_VALUE >= mf.x1 AND NUMBER_VALUE < mf.x2
         )
         JOIN
         (
@@ -142,7 +135,8 @@ SELECT lvv AS linguistic_variable_value,
             WHERE attribute_id = 4 -- Ціна
         )
         USING (entity_id)
-        GROUP BY lvv   ) LOOP NULL; END LOOP;
+        GROUP BY lvv  
+	) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)
     VALUES (p_data_volume, 'EAV_MODEL', 'FUZZY_AVG', get_elapsed_ms(v_start_time, v_end_time), p_notes);
