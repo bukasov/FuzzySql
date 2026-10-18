@@ -1,4 +1,7 @@
--- TRUNCATE TABLE experiment_results
+
+-- Clear previous experiment results
+   TRUNCATE TABLE experiment_results;
+   TRUNCATE TABLE test_execution_log;
 
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 

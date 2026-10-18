@@ -13,7 +13,7 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO v_col_exists 
     FROM user_tab_columns 
-    WHERE table_name = 'LVV' AND column_nme = 'BND_MIN';
+    WHERE table_name = 'LVV' AND column_name = 'BND_MIN';
     
     IF v_col_exists = 0 THEN
         EXECUTE IMMEDIATE 'ALTER TABLE lvv ADD (bnd_min NUMBER)';

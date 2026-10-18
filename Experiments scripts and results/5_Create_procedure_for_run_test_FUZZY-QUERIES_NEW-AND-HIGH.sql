@@ -134,43 +134,34 @@ BEGIN
     VALUES (p_data_volume, 'FLAT_TABLE_IDX', 'COMBINED_SEARCH', get_elapsed_ms(v_start_time, v_end_time), p_notes);
 
     ---------------------------------------------------------
-    -- 5. EAV MODEL (Запропонований підхід)
+    -- 5. EAV MODEL
     ---------------------------------------------------------
     v_start_time := SYSTIMESTAMP;
     FOR r IN (
-		SELECT entity_id, c1.entity_name
-          ,LEAST(c1.degree, c2.degree) AS FUZZY_DEGREE_MIN 
-          ,c1.degree * c2.degree AS FUZZY_DEGREE_PROD 
-          ,c1.degree AS year_is_new_degree
-          ,c2.degree AS engine_capacity_is_high_degree
-        FROM 
-          (
-            -- Підзапит 1: Ізолюємо 'NEW'
-            SELECT entity_id, entity.entity_name, y1 + (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
-            FROM lvv
-            JOIN value USING(attribute_id) 
-            JOIN entity USING(entity_id) 
-            JOIN mf USING(lvv_id)
-            WHERE attribute_id = 2 
-              AND lvv = 'NEW'
-              AND NUMBER_VALUE > lvv.bnd_min AND NUMBER_VALUE < lvv.bnd_max
-              AND NUMBER_VALUE >= mf.x1 AND NUMBER_VALUE < mf.x2
-          ) c1 
-        INNER JOIN
-          (
-            -- Підзапит 2: Ізолюємо 'HIGH'
-            SELECT entity_id, entity.entity_name, y1 + (NUMBER_VALUE - x1) * (y2-y1)/(x2-x1) AS degree 
-            FROM lvv
-            JOIN value USING(attribute_id) 
-            JOIN entity USING(entity_id) 
-            JOIN mf USING(lvv_id)
-            WHERE attribute_id = 3 
-              AND lvv = 'HIGH'
-              AND NUMBER_VALUE > lvv.bnd_min AND NUMBER_VALUE < lvv.bnd_max
-              AND NUMBER_VALUE >= mf.x1 AND NUMBER_VALUE < mf.x2
-          ) c2
-        USING(entity_id)
-        WHERE c1.degree > 0 AND c2.degree > 0
+		WITH matched_entities AS (
+            -- 1. Знаходимо потрібні сутності за критеріями (швидкий пошук з GROUP BY)
+            SELECT e.entity_id, e.entity_name,
+                   MIN(mf.y1 + (v.number_value - mf.x1) * (mf.y2 - mf.y1) / (mf.x2 - mf.x1)) AS FUZZY_DEGREE
+            FROM lvv l
+            INNER JOIN value v ON l.attribute_id = v.attribute_id
+            INNER JOIN entity e ON v.entity_id = e.entity_id
+            INNER JOIN mf ON l.lvv_id = mf.lvv_id
+            WHERE ((l.attribute_id = 2 AND l.lvv = 'NEW') OR (l.attribute_id = 3 AND l.lvv = 'HIGH'))
+              AND v.number_value >= l.bnd_min AND v.number_value < l.bnd_max
+              AND v.number_value >= mf.x1 AND v.number_value < mf.x2
+            GROUP BY e.entity_id, e.entity_name
+            HAVING COUNT(*) = 2
+        )
+        -- 2. Отримуємо необхідні атрибути, щоб результат 1 в 1 збігався з FLAT
+        SELECT m.entity_name AS model,
+               v_type.text_value AS type,
+               v_year.number_value AS prod_year,
+               v_eng.number_value AS engine_capacity,
+               m.FUZZY_DEGREE_MIN
+        FROM matched_entities m
+        LEFT JOIN value v_type ON m.entity_id = v_type.entity_id AND v_type.attribute_id = 1
+        LEFT JOIN value v_year ON m.entity_id = v_year.entity_id AND v_year.attribute_id = 2
+        LEFT JOIN value v_eng  ON m.entity_id = v_eng.entity_id  AND v_eng.attribute_id = 3
     ) LOOP NULL; END LOOP;
     v_end_time := SYSTIMESTAMP;
     INSERT INTO experiment_results (data_volume, architecture, query_type, elapsed_ms, notes)

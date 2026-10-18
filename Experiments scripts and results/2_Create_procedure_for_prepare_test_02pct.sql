@@ -19,7 +19,7 @@ BEGIN
     EXECUTE IMMEDIATE 'TRUNCATE TABLE entity';
     EXECUTE IMMEDIATE 'TRUNCATE TABLE tbl_cars';
 
-    -- 3. Генерація для класичної таблиці (Sparse Data: 2% релевантних, 98% шуму)
+    -- 3. Генерація для класичної таблиці (Sparse Data: незалежні 2% релевантних)
     EXECUTE IMMEDIATE 'INSERT /*+ APPEND */ INTO tbl_cars (id_sam, model, type, prod_year, engine_capacity, price)
     SELECT 
         LEVEL,
@@ -30,15 +30,15 @@ BEGIN
             WHEN 2 THEN ''CABRIO'' 
             ELSE ''COMBI'' 
         END,
-        -- Sparse кластеризація по роках:
+        -- Випадкова кластеризація по роках:
         CASE 
-            WHEN MOD(LEVEL, 100) < 2 THEN TRUNC(DBMS_RANDOM.VALUE(2012, 2022)) -- 1% релевантних (задовольняють NEW)
-            ELSE TRUNC(DBMS_RANDOM.VALUE(1990, 2009))                          -- 99% шуму (відсіюються)
+            WHEN DBMS_RANDOM.VALUE(0, 1) < 0.02 THEN TRUNC(DBMS_RANDOM.VALUE(2012, 2022)) -- 2% релевантних (задовольняють NEW)
+            ELSE TRUNC(DBMS_RANDOM.VALUE(1990, 2009))                          -- 98% шуму
         END AS prod_year,
-        -- Sparse кластеризація по об''єму двигуна:
+        -- Випадкова кластеризація по об''єму двигуна:
         CASE 
-            WHEN MOD(LEVEL, 100) < 2 THEN ROUND(DBMS_RANDOM.VALUE(2.0, 5.0), 1) -- 1% релевантних (задовольняють HIGH)
-            ELSE ROUND(DBMS_RANDOM.VALUE(1.0, 1.5), 1)                          -- 99% шуму (відсіюються)
+            WHEN DBMS_RANDOM.VALUE(0, 1) < 0.02 THEN ROUND(DBMS_RANDOM.VALUE(2.0, 5.0), 1) -- 2% релевантних (задовольняють HIGH)
+            ELSE ROUND(DBMS_RANDOM.VALUE(1.0, 1.5), 1)                          -- 98% шуму
         END AS engine_capacity,
         ROUND(DBMS_RANDOM.VALUE(2000, 80000), -2) AS price
     FROM dual CONNECT BY LEVEL <= ' || p_row_count;
@@ -49,18 +49,12 @@ BEGIN
     SELECT id_sam, 1, model FROM tbl_cars';
     COMMIT;
 
-    -- 5. Генерація значень для EAV (автоматично успадковує 2% селективність з tbl_cars)
+    -- 5. Генерація значень для EAV 
     EXECUTE IMMEDIATE 'INSERT /*+ APPEND */ INTO value (value_id, entity_id, attribute_id, text_value, number_value)
-    -- Основні 4 атрибути (відповідають tbl_cars)
-    SELECT (id_sam - 1) * 8 + 1, id_sam, 1, type, NULL FROM tbl_cars UNION ALL
-    SELECT (id_sam - 1) * 8 + 2, id_sam, 2, NULL, prod_year FROM tbl_cars UNION ALL
-    SELECT (id_sam - 1) * 8 + 3, id_sam, 3, NULL, engine_capacity FROM tbl_cars UNION ALL
-    SELECT (id_sam - 1) * 8 + 4, id_sam, 4, NULL, price FROM tbl_cars UNION ALL
-    -- Додаткові 4 атрибути (збільшують навантаження на таблицю value)
-    SELECT (id_sam - 1) * 8 + 5, id_sam, 5, NULL, ROUND(DBMS_RANDOM.VALUE(10000, 250000)) FROM tbl_cars UNION ALL -- MILEAGE
-    SELECT (id_sam - 1) * 8 + 6, id_sam, 6, NULL, ROUND(DBMS_RANDOM.VALUE(90, 450)) FROM tbl_cars UNION ALL        -- POWER
-    SELECT (id_sam - 1) * 8 + 7, id_sam, 7, NULL, CASE MOD(id_sam, 2) WHEN 0 THEN 4 ELSE 2 END FROM tbl_cars UNION ALL -- DOORS
-    SELECT (id_sam - 1) * 8 + 8, id_sam, 8, NULL, ROUND(DBMS_RANDOM.VALUE(5.5, 16.0), 1) FROM tbl_cars';           -- FUEL_CONSUMPTION
+    SELECT (id_sam - 1) * 4 + 1, id_sam, 1, type, NULL FROM tbl_cars UNION ALL
+    SELECT (id_sam - 1) * 4 + 2, id_sam, 2, NULL, prod_year FROM tbl_cars UNION ALL
+    SELECT (id_sam - 1) * 4 + 3, id_sam, 3, NULL, engine_capacity FROM tbl_cars UNION ALL
+    SELECT (id_sam - 1) * 4 + 4, id_sam, 4, NULL, price FROM tbl_cars';
     COMMIT;
 
     -- 6. Перебудова індексів та включення обмежень
