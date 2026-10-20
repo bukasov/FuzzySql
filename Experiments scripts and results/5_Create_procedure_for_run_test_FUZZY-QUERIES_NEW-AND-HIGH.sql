@@ -157,7 +157,7 @@ BEGIN
                v_type.text_value AS type,
                v_year.number_value AS prod_year,
                v_eng.number_value AS engine_capacity,
-               m.FUZZY_DEGREE_MIN
+               m.FUZZY_DEGREE
         FROM matched_entities m
         LEFT JOIN value v_type ON m.entity_id = v_type.entity_id AND v_type.attribute_id = 1
         LEFT JOIN value v_year ON m.entity_id = v_year.entity_id AND v_year.attribute_id = 2
